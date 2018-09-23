@@ -7,3 +7,6 @@ Terminal application for finding duplicate files.
 ```sh
 go get -v github.com/masgari/dup-tu
 ```
+*WARNING*
+
+`Delete` remove duplicate files without confirm, be careful.

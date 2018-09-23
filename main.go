@@ -146,7 +146,7 @@ func setupHotkeys(app *tview.Application) {
 			exportDuplicates(app)
 		} else if event.Key() == tcell.KeyCtrlM {
 			moveDuplicates(app)
-		} else if event.Key() == tcell.KeyCtrlD {
+		} else if event.Key() == tcell.KeyCtrlUnderscore {
 			deleteDuplicates(app)
 		}
 		return event
@@ -168,7 +168,7 @@ func setupGui() (*tview.Application, *tview.Flex, *tview.TextView, *tview.List) 
 		AddItem(left, 0, 1, false).
 		AddItem(right, 0, 3, true)
 
-	help := newTextView("Help", "Ctrl+e: Export\t Ctrl+m: Move\t Ctrl+d: Delete\t Ctrl+o: Open selected item")
+	help := newTextView("Help", "Ctrl+e: Export\t Ctrl+m: Move\t Ctrl+_: Delete\t Ctrl+o: Open selected item")
 	flex := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(path, 3, 1, false).
 		AddItem(contextBox, 0, 1, true).
