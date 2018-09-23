@@ -1,8 +1,8 @@
 package main
 
 import (
-	"hash/crc32"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"log"
 	"os"
@@ -20,7 +20,7 @@ import (
 type tFileData struct {
 	path     string
 	size     int64
-	hash      []byte
+	hash     []byte
 	modified int64
 }
 
@@ -38,6 +38,7 @@ var (
 	checksumChannel chan tFileData
 	duplicates      map[string][]tFileData
 	scanDir         string
+	targetDir       string
 	stats           tStats
 	formatter       *message.Printer
 )
@@ -49,7 +50,9 @@ func panicErr(err error) {
 }
 
 func walk(path string, info os.FileInfo, err error) error {
-	panicErr(err)
+	if err != nil {
+		// TODO: log err to a file
+	}
 	if !info.Mode().IsRegular() {
 		return nil
 	}
@@ -117,13 +120,29 @@ func deleteDuplicates(app *tview.Application) {
 	log.Printf("Deleted %d duplicate file(s)", count)
 }
 
+func ensureTargetDir() string {
+	err := os.MkdirAll(targetDir, os.ModePerm)
+	panicErr(err)
+	return targetDir
+}
+
 func moveDuplicates(app *tview.Application) {
+	ensureTargetDir()
+	count := 0
+	list := listDuplicates()
+	for _, path := range list {
+		err := os.Rename(path, filepath.Join(targetDir, filepath.Base(path)))
+		panicErr(err)
+		count++
+	}
+	app.Stop()
+	log.Printf("Moved %d duplicate file(s) to: %s", count, targetDir)
 }
 
 func exportDuplicates(app *tview.Application) {
 	// TODO: show modal to enter export file name
-	name := "duplicates.txt"
-	file, err := os.Create(filepath.Join(scanDir, name))
+	path := filepath.Join(ensureTargetDir(), "duplicates.txt")
+	file, err := os.Create(path)
 	panicErr(err)
 	defer file.Close()
 	count := 0
@@ -135,7 +154,7 @@ func exportDuplicates(app *tview.Application) {
 		count++
 	}
 	app.Stop()
-	log.Printf("Exported %d duplicate file(s) to: %s", count, name)
+	log.Printf("Exported %d duplicate file(s) to: %s", count, path)
 }
 
 func setupHotkeys(app *tview.Application) {
@@ -262,10 +281,16 @@ func main() {
 	duplicates = make(map[string][]tFileData)
 	stats = tStats{0, 0, 0, 0, 0, false}
 	formatter = message.NewPrinter(language.English)
-	if len(os.Args) < 2 {
-		scanDir = "."
-	} else {
+	if len(os.Args) > 2 {
 		scanDir = os.Args[1]
+		targetDir = os.Args[2]
+	} else {
+		if len(os.Args) == 2 {
+			scanDir = os.Args[1]
+		} else {
+			scanDir = "."
+		}
+		targetDir = filepath.Join(scanDir, ".dup-fu")
 	}
 
 	app, flex, left, right := setupGui()
